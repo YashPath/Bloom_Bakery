@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Bloom Bakery Counter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;1,6..96,400&family=Hanken+Grotesk:wght@400;500;600&display=swap">
+<style>
+/* Layout: the counter screen. Summary strip, then a working list per tab. Same cocoa and gold as the shop, denser and quieter. */
+:root{
+  color-scheme:dark;
+  --cocoa:#24160F;--cocoa-2:#2D1C14;--cocoa-3:#38251B;
+  --ivory:#F2EADC;--ivory-dim:#BBAA95;--gold:#C6A66B;--blush:#D7A79C;--hair:rgba(242,234,220,.14);
+  --ok:#A3C08F;--warn:#E3B566;--bad:#D98C80;
+  --serif:"Bodoni Moda",Didot,Georgia,serif;--sans:"Hanken Grotesk","Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+[hidden]{display:none!important}
+body{background:var(--cocoa);color:var(--ivory);font:15px/1.5 var(--sans);-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:1.5px solid var(--gold);outline-offset:3px}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}
+.num{font-variant-numeric:tabular-nums}
+h1,h2{font-family:var(--serif);font-weight:400;margin:0}
+
+/* login */
+.login{min-height:100vh;display:grid;place-items:center;padding:24px}
+.login form{width:min(380px,100%);display:grid;gap:16px;border:1px solid var(--hair);padding:32px;background:var(--cocoa-2)}
+.login h1{font-size:2rem}
+.login p{margin:0;color:var(--ivory-dim)}
+label{font-size:.85rem;color:var(--ivory-dim);display:grid;gap:6px}
+input[type=password],input[type=date],select{background:var(--cocoa);border:1px solid var(--hair);border-radius:2px;padding:10px 12px;width:100%}
+input:focus,select:focus{border-color:var(--gold);outline:none}
+.primary{background:var(--gold);color:var(--cocoa);border:0;border-radius:2px;padding:12px 18px;font-weight:600}
+.primary:hover{background:var(--ivory)}
+.err{color:var(--blush);min-height:1.4em;margin:0;font-size:.9rem}
+
+/* app shell */
+header{border-bottom:1px solid var(--hair);background:var(--cocoa-2);position:sticky;top:0;z-index:5}
+header .wrap{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding-block:14px}
+.mark{font-family:var(--serif);font-size:1.3rem}
+.mark i{color:var(--gold)}
+.mark small{font-family:var(--sans);font-size:.8rem;color:var(--ivory-dim);margin-left:10px;font-style:normal}
+.updated{margin-left:auto;color:var(--ivory-dim);font-size:.85rem}
+.link{background:none;border:0;color:var(--ivory-dim);text-decoration:underline;text-underline-offset:4px;padding:4px}
+.link:hover{color:var(--ivory)}
+
+.summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--hair);border:1px solid var(--hair);margin-block:24px}
+.tile{background:var(--cocoa);padding:18px 20px;display:grid;gap:4px}
+.tile .k{color:var(--ivory-dim);font-size:.85rem}
+.tile .v{font-family:var(--serif);font-size:2rem;line-height:1.1;font-variant-numeric:lining-nums tabular-nums}
+.tile.attn .v{color:var(--warn)}
+@media (max-width:720px){.summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--hair);overflow-x:auto}
+.tab{background:none;border:0;border-bottom:2px solid transparent;padding:12px 16px;color:var(--ivory-dim);white-space:nowrap}
+.tab[aria-selected="true"]{color:var(--ivory);border-bottom-color:var(--gold)}
+.tab .c{display:inline-block;min-width:20px;padding:0 6px;margin-left:6px;border-radius:10px;background:var(--cocoa-3);font-size:.78rem;font-variant-numeric:tabular-nums}
+
+.filters{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:end;padding-block:18px}
+.filters label{min-width:160px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:none;border:1px solid var(--hair);border-radius:20px;padding:6px 14px;font-size:.88rem;color:var(--ivory-dim)}
+.chip[aria-pressed="true"]{border-color:var(--gold);color:var(--ivory)}
+
+.list{display:grid;gap:0;border-top:1px solid var(--hair)}
+.row{display:grid;grid-template-columns:110px minmax(0,1.1fr) minmax(0,1.6fr) 100px auto;gap:12px 20px;align-items:start;padding:16px 4px;border-bottom:1px solid var(--hair)}
+.row.done{opacity:.55}
+.when{font-variant-numeric:tabular-nums}
+.when b{display:block;font-size:1.15rem;font-weight:500}
+.when span{color:var(--ivory-dim);font-size:.82rem}
+.who b{display:block;font-weight:500}
+.who span{color:var(--ivory-dim);font-size:.88rem;font-variant-numeric:tabular-nums}
+.what{color:var(--ivory-dim);font-size:.92rem}
+.what b{color:var(--ivory);font-weight:500}
+.money{font-family:var(--serif);font-size:1.15rem;text-align:right;font-variant-numeric:lining-nums tabular-nums}
+.acts{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;align-items:center}
+.pill{font-size:.78rem;padding:2px 10px;border-radius:12px;border:1px solid currentColor;white-space:nowrap}
+.pill.pending,.pill.new{color:var(--warn)}
+.pill.ready,.pill.confirmed{color:var(--ok)}
+.pill.collected{color:var(--ivory-dim)}
+.pill.cancelled,.pill.declined{color:var(--bad)}
+.btn{background:none;border:1px solid var(--hair);border-radius:2px;padding:6px 12px;font-size:.85rem}
+.btn:hover{border-color:var(--gold);color:var(--gold)}
+.btn.go{border-color:var(--gold);color:var(--gold)}
+.btn.go:hover{background:var(--gold);color:var(--cocoa)}
+@media (max-width:860px){.row{grid-template-columns:90px minmax(0,1fr) auto}.what{grid-column:2/-1}.money{grid-column:3;grid-row:1;text-align:right}.acts{grid-column:1/-1;justify-content:flex-start}}
+
+.empty{padding:48px 4px;color:var(--ivory-dim)}
+.empty b{display:block;color:var(--ivory);font-family:var(--serif);font-weight:400;font-size:1.3rem;margin-bottom:4px}
+
+.menu-row{display:grid;grid-template-columns:minmax(0,1fr) 90px 150px;gap:16px;align-items:center;padding:12px 4px;border-bottom:1px solid var(--hair)}
+.menu-row .cat{color:var(--ivory-dim);font-size:.82rem}
+.menu-row .money{font-size:1rem}
+.toggle{display:flex;align-items:center;gap:10px;justify-content:flex-end;font-size:.88rem;color:var(--ivory-dim);cursor:pointer}
+.toggle input{position:absolute;opacity:0;width:1px;height:1px}
+.toggle .tr{width:38px;height:20px;border:1px solid var(--ivory-dim);border-radius:20px;position:relative;flex:none}
+.toggle .tr::after{content:"";position:absolute;top:3px;left:3px;width:12px;height:12px;border-radius:50%;background:var(--ivory-dim);transition:transform .15s}
+.toggle input:checked + .tr{border-color:var(--bad)}
+.toggle input:checked + .tr::after{transform:translateX(18px);background:var(--bad)}
+.toggle input:focus-visible + .tr{outline:1.5px solid var(--gold);outline-offset:3px}
+@media (max-width:560px){.menu-row{grid-template-columns:minmax(0,1fr) auto}.menu-row .money{display:none}}
+
+.toast{position:fixed;left:16px;bottom:16px;background:var(--ivory);color:var(--cocoa);padding:10px 16px;border-radius:2px;z-index:10;opacity:0;transform:translateY(20px);transition:.25s}
+.toast.show{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<main class="login" id="loginView" hidden>
+  <form id="loginForm" novalidate>
+    <h1>Bloom <i style="color:var(--gold)">Bakery</i></h1>
+    <p>Counter dashboard. Log in to see today's orders.</p>
+    <label for="pw">Password<input type="password" id="pw" autocomplete="current-password" required></label>
+    <p class="err" id="loginErr" role="alert"></p>
+    <button class="primary" type="submit">Log in</button>
+  </form>
+</main>
+
+<div id="appView" hidden>
+  <header>
+    <div class="wrap">
+      <span class="mark">Bloom <i>Bakery</i><small>Counter</small></span>
+      <span class="updated" id="updated" aria-live="polite"></span>
+      <a class="link" href="/" target="_blank" rel="noopener">View shop</a>
+      <button class="link" type="button" id="logout">Log out</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="summary" id="summary"></div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" type="button" data-tab="orders" aria-selected="true">Orders</button>
+      <button class="tab" role="tab" type="button" data-tab="enquiries" aria-selected="false">Cake enquiries<span class="c" id="enqCount">0</span></button>
+      <button class="tab" role="tab" type="button" data-tab="menu" aria-selected="false">Menu and stock</button>
+    </div>
+
+    <section id="tab-orders">
+      <div class="filters">
+        <label for="day">Pickup day<input type="date" id="day"></label>
+        <div class="chips" id="orderChips" role="group" aria-label="Filter by status"></div>
+      </div>
+      <div class="list" id="orders"></div>
+    </section>
+
+    <section id="tab-enquiries" hidden>
+      <div class="filters"><div class="chips" id="enqChips" role="group" aria-label="Filter by status"></div></div>
+      <div class="list" id="enquiries"></div>
+    </section>
+
+    <section id="tab-menu" hidden>
+      <div class="filters"><p style="margin:0;color:var(--ivory-dim)">Mark an item sold out and the shop stops taking orders for it straight away.</p></div>
+      <div id="menu" style="border-top:1px solid var(--hair)"></div>
+    </section>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="/admin.js" defer></script>
+</body>
+</html>

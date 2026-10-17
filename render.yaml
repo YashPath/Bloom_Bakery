@@ -1,0 +1,36 @@
+# Render Blueprint: free web service + free Render Postgres.
+# Render > New > Blueprint > pick this repo. It creates both and connects them.
+#
+# Free plan limits (checked October 2026, see render.com/docs/free):
+# - the web service sleeps after 15 minutes without visits; the next visit takes about a minute to wake it
+# - the free Postgres database expires 30 days after creation (14-day grace period to upgrade)
+
+databases:
+  - name: bloom-db
+    plan: free
+    region: singapore
+    databaseName: bloom
+    user: bloom
+
+services:
+  - type: web
+    name: bloom-bakery
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "20"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: bloom-db
+          property: connectionString
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
